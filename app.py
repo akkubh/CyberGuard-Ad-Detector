@@ -590,23 +590,56 @@ def main():
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
+    # ── Session state initialisation (must happen BEFORE widgets render) ──────
+    # Streamlit widgets bound via `key=` read their initial value from
+    # st.session_state on every rerun. We initialise the keys here so that
+    # clicking a Quick Test button can write the sample text into state
+    # before the text_area is drawn — making the value appear immediately.
+    if "ad_text" not in st.session_state:
+        st.session_state["ad_text"] = ""
+    if "url_input" not in st.session_state:
+        st.session_state["url_input"] = ""
+    # auto_analyze is set to True when a Quick Test button is clicked so the
+    # results section fires on the same rerun that fills the text area.
+    if "auto_analyze" not in st.session_state:
+        st.session_state["auto_analyze"] = False
+
+    # ── Quick Test examples (defined here so the callback can reference them) ─
+    examples = {
+        "Job Scam Sample":   "Urgent hiring! Work from home. Earn ₹50,000 per day. No experience needed. Immediate joining. WhatsApp now.",
+        "Loan Scam Sample":  "Instant personal loan ₹50 lakh approved in 10 minutes. No CIBIL check. No documents. Apply now.",
+        "Investment Scam":   "Invest ₹5000 and get ₹50,000 in 30 days. 300% guaranteed returns. Limited slots. Join now.",
+        "Genuine Ad Sample": "TCS is hiring software engineers. B.Tech required. 3+ years experience. Apply on tcs.com careers portal.",
+    }
+
+    def load_example(text: str):
+        """Callback: writes sample into session state and arms auto-analysis."""
+        st.session_state["ad_text"]      = text
+        st.session_state["url_input"]    = ""
+        st.session_state["auto_analyze"] = True
+
     # ── Input columns ─────────────────────────────────────────────────────────
     left, right = st.columns([3, 2], gap="large")
 
     with left:
         st.markdown('<div class="section-title">📋 Paste Advertisement Text</div>', unsafe_allow_html=True)
+        # key="ad_text" binds the widget to st.session_state["ad_text"].
+        # Any value written to that key before this line renders will appear
+        # in the box automatically (that's how load_example() works).
         ad_text = st.text_area(
             label="ad_text",
             label_visibility="collapsed",
             placeholder="Paste the suspicious advertisement text here...\n\nExample: Earn ₹50,000 per day working from home! No experience needed. Immediate joining. WhatsApp now. Limited seats available...",
-            height=180
+            height=180,
+            key="ad_text",
         )
 
         st.markdown('<div class="section-title">🔗 Suspicious URL Checker (Optional)</div>', unsafe_allow_html=True)
         url_input = st.text_input(
             label="url_input",
             label_visibility="collapsed",
-            placeholder="e.g. http://sbi-loan-offer.xyz/apply or paste any suspicious link..."
+            placeholder="e.g. http://sbi-loan-offer.xyz/apply or paste any suspicious link...",
+            key="url_input",
         )
 
         analyze_btn = st.button("🔍 Analyze for Fraud", type="primary", use_container_width=True)
@@ -628,24 +661,27 @@ def main():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Quick test examples
+        # Quick test examples — on_click writes to session state BEFORE the
+        # next rerun renders the widgets, so the text area is already filled.
         st.markdown('<div class="section-title">⚡ Quick Test Examples</div>', unsafe_allow_html=True)
-        examples = {
-            "Job Scam Sample":   "Urgent hiring! Work from home. Earn ₹50,000 per day. No experience needed. Immediate joining. WhatsApp now.",
-            "Loan Scam Sample":  "Instant personal loan ₹50 lakh approved in 10 minutes. No CIBIL check. No documents. Apply now.",
-            "Investment Scam":   "Invest ₹5000 and get ₹50,000 in 30 days. 300% guaranteed returns. Limited slots. Join now.",
-            "Genuine Ad Sample": "TCS is hiring software engineers. B.Tech required. 3+ years experience. Apply on tcs.com careers portal.",
-        }
         for name, sample_text in examples.items():
-            if st.button(f"📌 {name}", use_container_width=True, key=name):
-                st.session_state["sample_text"] = sample_text
+            st.button(
+                f"📌 {name}",
+                use_container_width=True,
+                key=f"btn_{name}",
+                on_click=load_example,
+                args=(sample_text,),
+            )
 
-    # Auto-fill from quick test
-    if "sample_text" in st.session_state and not ad_text:
-        ad_text = st.session_state["sample_text"]
+    # ── Decide whether to run analysis ────────────────────────────────────────
+    # Trigger if the user clicked "Analyze" OR if a Quick Test button armed
+    # the auto_analyze flag (which load_example() sets to True).
+    should_analyze = analyze_btn or st.session_state["auto_analyze"]
+    if st.session_state["auto_analyze"]:
+        st.session_state["auto_analyze"] = False   # reset so it doesn't re-fire
 
     # ── Analysis Output ───────────────────────────────────────────────────────
-    if analyze_btn and (ad_text.strip() or url_input.strip()):
+    if should_analyze and (ad_text.strip() or url_input.strip()):
         st.markdown("<hr>", unsafe_allow_html=True)
         st.markdown("## 📊 Analysis Results")
 
