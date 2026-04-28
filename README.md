@@ -2,7 +2,7 @@
 **Cyber Crime Detection and Prevention Unit • Nuh Police Department Prototype**
 
 ### 🎯 Overview
-[cite_start]This project is an automated AI-based detection system designed to identify fraudulent online advertisements related to job, loan, and investment scams[cite: 2, 4]. [cite_start]It provides real-time risk scoring to help prevent citizens from falling victim to attractive but misleading offers[cite: 5, 15].
+[cite_start]This project is an automated AI-based detection system designed to identify the fraudulent online advertisements related to job, loan, and investment scams[cite: 2, 4]. [cite_start]It provides real-time risk scoring to help prevent citizens from falling victim to attractive but misleading offers[cite: 5, 15].
 
 ### 🛠️ Technical Architecture
 * [cite_start]**Frontend:** Streamlit (Real-time Web Dashboard) [cite: 27]
