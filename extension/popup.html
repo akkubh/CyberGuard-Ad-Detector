@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberGuard</title>
+  <style>
+    /* ── RESET & BASE ──────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy-900:   #050d1f;
+      --navy-800:   #0a1628;
+      --navy-700:   #0f1f3d;
+      --navy-600:   #162847;
+      --navy-500:   #1e3560;
+
+      --neon-green: #00ff9d;
+      --neon-blue:  #00c8ff;
+      --neon-red:   #ff2d55;
+      --neon-amber: #ffb800;
+      --neon-orange:#ff6b35;
+
+      --text-primary:   #f0f4ff;
+      --text-secondary: rgba(240, 244, 255, 0.55);
+      --text-muted:     rgba(240, 244, 255, 0.30);
+
+      --border:     rgba(255, 255, 255, 0.07);
+      --border-glow:rgba(0, 200, 255, 0.20);
+      --glass:      rgba(255, 255, 255, 0.04);
+
+      --radius-sm:  8px;
+      --radius-md:  12px;
+      --radius-lg:  16px;
+
+      --font: 'Segoe UI', 'Inter', -apple-system, sans-serif;
+    }
+
+    body {
+      width: 380px;
+      min-height: 560px;
+      background: var(--navy-900);
+      color: var(--text-primary);
+      font-family: var(--font);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* ── SCROLLBAR ─────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--navy-500); border-radius: 4px; }
+
+    /* ── HEADER ────────────────────────────────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, var(--navy-800), var(--navy-700));
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 120px; height: 120px;
+      background: radial-gradient(circle, rgba(0,200,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 10px; }
+
+    .logo {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--neon-blue), var(--neon-green));
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      box-shadow: 0 0 16px rgba(0,200,255,0.3);
+      flex-shrink: 0;
+    }
+
+    .header-text h1 {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--text-primary);
+    }
+
+    .header-text p {
+      font-size: 10px;
+      color: var(--text-secondary);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--neon-green);
+      box-shadow: 0 0 6px var(--neon-green);
+      flex-shrink: 0;
+      animation: pulse-dot 2s infinite;
+    }
+    .status-dot.offline { background: #555; box-shadow: none; animation: none; }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    /* ── PAGE URL STRIP ────────────────────────────────────────────────────── */
+    .url-strip {
+      background: var(--navy-800);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 16px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .url-strip .url-icon { color: var(--text-muted); font-size: 11px; }
+
+    .url-strip .url-text {
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    /* ── MAIN CONTENT ──────────────────────────────────────────────────────── */
+    .content { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── GAUGE CARD ────────────────────────────────────────────────────────── */
+    .gauge-card {
+      background: var(--navy-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px 14px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+
+    .gauge-card.risk-safe     { border-color: rgba(0, 255, 157, 0.25); }
+    .gauge-card.risk-caution  { border-color: rgba(255, 184, 0, 0.25); }
+    .gauge-card.risk-high     { border-color: rgba(255, 107, 53, 0.25); }
+    .gauge-card.risk-critical { border-color: rgba(255, 45, 85, 0.35);
+      box-shadow: 0 0 20px rgba(255,45,85,0.12); }
+
+    .gauge-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent, #00c8ff), transparent);
+      opacity: 0.6;
+    }
+
+    .gauge-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .gauge-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .verdict-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+    }
+    .verdict-fake    { background: rgba(255,45,85,0.15);  color: var(--neon-red);    border: 1px solid rgba(255,45,85,0.3);  }
+    .verdict-genuine { background: rgba(0,255,157,0.1);   color: var(--neon-green);  border: 1px solid rgba(0,255,157,0.25); }
+    .verdict-unknown { background: rgba(255,255,255,0.05);color: var(--text-muted);  border: 1px solid var(--border); }
+
+    /* SVG Gauge */
+    .gauge-wrap { display: flex; align-items: center; gap: 16px; }
+
+    .gauge-svg-wrap { flex-shrink: 0; }
+
+    .gauge-meta { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+    .score-big {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      transition: color 0.3s;
+    }
+
+    .score-sub {
+      font-size: 10px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .category-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: var(--text-primary);
+      max-width: 160px;
+    }
+
+    /* ── RISK BAR ──────────────────────────────────────────────────────────── */
+    .risk-bar-wrap {
+      margin-top: 12px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 4px;
+      height: 6px;
+      overflow: hidden;
+    }
+
+    .risk-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s cubic-bezier(0.16,1,0.3,1), background 0.3s;
+    }
+
+    /* ── KEYWORDS SECTION ─────────────────────────────────────────────────── */
+    .section-head {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .section-head::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .keywords-wrap {
+      background: var(--navy-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      max-height: 130px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .kw-category {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .kw-cat-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .kw-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+
+    .kw-tag {
+      background: rgba(255,45,85,0.12);
+      border: 1px solid rgba(255,45,85,0.25);
+      color: #ff8099;
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    .no-keywords {
+      color: var(--text-muted);
+      font-size: 11px;
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    /* ── SCAN BUTTON ───────────────────────────────────────────────────────── */
+    .btn-scan {
+      width: 100%;
+      padding: 11px;
+      background: linear-gradient(135deg, #00a8d4, #0070a8);
+      border: none;
+      border-radius: var(--radius-md);
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      box-shadow: 0 4px 14px rgba(0,168,212,0.25);
+    }
+
+    .btn-scan:hover  { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,168,212,0.35); }
+    .btn-scan:active { transform: translateY(0);    opacity: 0.85; }
+    .btn-scan:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── REPORT SECTION ────────────────────────────────────────────────────── */
+    .report-card {
+      background: var(--navy-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .report-header {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+
+    .report-header:hover { background: var(--glass); }
+
+    .report-header-text { flex: 1; }
+    .report-header-text h3 { font-size: 12px; font-weight: 600; }
+    .report-header-text p  { font-size: 10px; color: var(--text-secondary); margin-top: 1px; }
+
+    .report-chevron {
+      color: var(--text-muted);
+      font-size: 11px;
+      transition: transform 0.2s;
+    }
+    .report-chevron.open { transform: rotate(180deg); }
+
+    .report-body {
+      padding: 14px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .report-body.open { display: flex; }
+
+    .input-group { display: flex; flex-direction: column; gap: 5px; }
+    .input-group label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .input-group textarea,
+    .input-group input {
+      background: var(--navy-900);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: var(--font);
+      font-size: 12px;
+      padding: 8px 10px;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+
+    .input-group textarea:focus,
+    .input-group input:focus {
+      border-color: var(--border-glow);
+    }
+
+    .input-group textarea { height: 64px; }
+
+    .report-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 10px;
+      color: var(--text-secondary);
+      padding: 8px;
+      background: rgba(255,255,255,0.02);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .report-meta-item { display: flex; flex-direction: column; gap: 2px; }
+    .report-meta-item .meta-label { color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .report-meta-item .meta-value { color: var(--text-primary); font-weight: 600; }
+
+    .btn-report {
+      width: 100%;
+      padding: 11px;
+      background: linear-gradient(135deg, rgba(255,45,85,0.85), rgba(200,0,50,0.85));
+      border: 1px solid rgba(255,45,85,0.4);
+      border-radius: var(--radius-md);
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      box-shadow: 0 4px 14px rgba(255,45,85,0.2);
+    }
+
+    .btn-report:hover  { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,45,85,0.3); }
+    .btn-report:active { transform: translateY(0); opacity: 0.85; }
+    .btn-report:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    /* ── TOAST NOTIFICATION ────────────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 14px; left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--navy-600);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      z-index: 999;
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.3s;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.success { border-color: rgba(0,255,157,0.3); color: var(--neon-green); }
+    .toast.error   { border-color: rgba(255,45,85,0.3);  color: #ff8099; }
+
+    /* ── LOADING STATE ─────────────────────────────────────────────────────── */
+    .loading-overlay {
+      position: absolute; inset: 0;
+      background: rgba(5,13,31,0.85);
+      backdrop-filter: blur(4px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      border-radius: var(--radius-lg);
+    }
+    .loading-overlay.active { opacity: 1; pointer-events: all; }
+
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--neon-blue);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-overlay p {
+      font-size: 11px;
+      color: var(--text-secondary);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── OFFLINE BANNER ────────────────────────────────────────────────────── */
+    .offline-banner {
+      background: rgba(255,107,53,0.1);
+      border: 1px solid rgba(255,107,53,0.25);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 11px;
+      color: #ffa07a;
+      display: none;
+      align-items: center;
+      gap: 7px;
+    }
+    .offline-banner.show { display: flex; }
+
+    /* ── FOOTER ────────────────────────────────────────────────────────────── */
+    .footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-brand {
+      font-size: 9px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .footer-version {
+      font-size: 9px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── HEADER ──────────────────────────────────────────────────────────── -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">🛡️</div>
+      <div class="header-text">
+        <h1>CyberGuard</h1>
+        <p>Nuh Police · Cyber Crime Unit</p>
+      </div>
+    </div>
+    <div id="statusDot" class="status-dot"></div>
+  </div>
+
+  <!-- ── URL STRIP ───────────────────────────────────────────────────────── -->
+  <div class="url-strip">
+    <span class="url-icon">🔗</span>
+    <span id="pageUrl" class="url-text">Loading...</span>
+  </div>
+
+  <!-- ── MAIN CONTENT ────────────────────────────────────────────────────── -->
+  <div class="content">
+
+    <!-- OFFLINE BANNER -->
+    <div id="offlineBanner" class="offline-banner">
+      <span>⚡</span>
+      <span>Backend offline — start <code>uvicorn api:app</code> for live AI analysis</span>
+    </div>
+
+    <!-- GAUGE CARD -->
+    <div id="gaugeCard" class="gauge-card risk-safe" style="--accent: #00c8ff">
+      <div class="loading-overlay" id="gaugeLoader">
+        <div class="spinner"></div>
+        <p>Analysing page content…</p>
+      </div>
+
+      <div class="gauge-header">
+        <span class="gauge-label">Fraud Risk Score</span>
+        <span id="verdictBadge" class="verdict-badge verdict-unknown">SCANNING…</span>
+      </div>
+
+      <div class="gauge-wrap">
+        <!-- SVG semi-circle gauge -->
+        <div class="gauge-svg-wrap">
+          <svg width="110" height="66" viewBox="0 0 110 66">
+            <!-- Track -->
+            <path d="M 8 60 A 47 47 0 0 1 102 60"
+                  fill="none" stroke="rgba(255,255,255,0.07)"
+                  stroke-width="10" stroke-linecap="round"/>
+            <!-- Fill — dasharray controlled by JS -->
+            <path id="gaugeFill"
+                  d="M 8 60 A 47 47 0 0 1 102 60"
+                  fill="none" stroke="#00ff9d"
+                  stroke-width="10" stroke-linecap="round"
+                  stroke-dasharray="0 148"
+                  style="transition: stroke-dasharray 0.8s cubic-bezier(0.16,1,0.3,1), stroke 0.3s"/>
+            <!-- Score text -->
+            <text id="gaugeScoreText" x="55" y="52"
+                  text-anchor="middle" font-size="19" font-weight="800"
+                  fill="#00ff9d" style="transition: fill 0.3s">--</text>
+          </svg>
+        </div>
+
+        <div class="gauge-meta">
+          <div>
+            <div id="scoreBig" class="score-big" style="color:#00ff9d">--</div>
+            <div class="score-sub">Risk Score %</div>
+          </div>
+          <div id="categoryTag" class="category-tag">
+            <span>🔍</span> <span id="categoryText">Awaiting scan</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="risk-bar-wrap">
+        <div id="riskBarFill" class="risk-bar-fill"
+             style="width:0%;background:var(--neon-green)"></div>
+      </div>
+    </div>
+
+    <!-- SCAN BUTTON -->
+    <button id="btnScan" class="btn-scan">
+      <span>🔍</span> Scan This Page Now
+    </button>
+
+    <!-- KEYWORDS -->
+    <div>
+      <div class="section-head"><span>⚑</span> Flagged Signals</div>
+      <div class="keywords-wrap" id="keywordsWrap">
+        <p class="no-keywords">No scan result yet. Click "Scan This Page Now".</p>
+      </div>
+    </div>
+
+    <!-- REPORT SECTION -->
+    <div class="report-card">
+      <div class="report-header" id="reportToggle">
+        <span style="font-size:16px">🚔</span>
+        <div class="report-header-text">
+          <h3>Report to Nuh Police</h3>
+          <p>File a structured cyber fraud report</p>
+        </div>
+        <span class="report-chevron" id="reportChevron">▼</span>
+      </div>
+
+      <div class="report-body" id="reportBody">
+        <!-- Auto-filled metadata -->
+        <div class="report-meta">
+          <div class="report-meta-item">
+            <span class="meta-label">Risk Score</span>
+            <span class="meta-value" id="metaRisk">—</span>
+          </div>
+          <div class="report-meta-item">
+            <span class="meta-label">Fraud Type</span>
+            <span class="meta-value" id="metaType">—</span>
+          </div>
+          <div class="report-meta-item">
+            <span class="meta-label">Detected At</span>
+            <span class="meta-value" id="metaTime">—</span>
+          </div>
+          <div class="report-meta-item">
+            <span class="meta-label">Keywords</span>
+            <span class="meta-value" id="metaKwCount">—</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Officer / Complainant Name</label>
+          <input type="text" id="reporterName" placeholder="e.g. Constable Ravi Kumar">
+        </div>
+
+        <div class="input-group">
+          <label>Additional Observations</label>
+          <textarea id="reportComment" placeholder="Describe any additional context, victim details, or observations…"></textarea>
+        </div>
+
+        <button id="btnReport" class="btn-report" disabled>
+          <span>📡</span> Submit Report to Database
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- ── FOOTER ──────────────────────────────────────────────────────────── -->
+  <div class="footer">
+    <span class="footer-brand">Nuh Police · AI Cyber Crime Unit</span>
+    <span class="footer-version">v1.0.0</span>
+  </div>
+
+  <!-- ── TOAST ───────────────────────────────────────────────────────────── -->
+  <div class="toast" id="toast"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

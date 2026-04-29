@@ -1,0 +1,88 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   CyberGuard – content.css
+   Styles for the floating risk badge injected into web pages.
+   Uses CSS custom properties so it stays visually isolated from the host page.
+   All selectors are scoped under #cyberguard-badge to avoid collisions.
+───────────────────────────────────────────────────────────────────────────── */
+
+#cyberguard-badge {
+  position:         fixed;
+  bottom:           24px;
+  right:            24px;
+  z-index:          2147483647; /* maximum z-index */
+  font-family:      'Segoe UI', 'Inter', sans-serif;
+  cursor:           pointer;
+  animation:        cg-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cg-slide-in {
+  from { opacity: 0; transform: translateX(120%); }
+  to   { opacity: 1; transform: translateX(0);    }
+}
+
+#cyberguard-badge .cg-badge-inner {
+  display:          flex;
+  align-items:      center;
+  gap:              10px;
+  background:       rgba(10, 15, 35, 0.92);
+  backdrop-filter:  blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border:           1px solid rgba(255, 255, 255, 0.08);
+  border-radius:    14px;
+  padding:          10px 16px 10px 12px;
+  box-shadow:       0 8px 32px rgba(0, 0, 0, 0.5),
+                    0 0 0 1px rgba(255,255,255,0.04);
+  min-width:        200px;
+  transition:       transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#cyberguard-badge:hover .cg-badge-inner {
+  transform:    translateY(-2px);
+  box-shadow:   0 12px 40px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(255,255,255,0.08);
+}
+
+#cyberguard-badge .cg-icon {
+  font-size:    20px;
+  line-height:  1;
+  flex-shrink:  0;
+}
+
+#cyberguard-badge .cg-text {
+  display:        flex;
+  flex-direction: column;
+  gap:            1px;
+  flex: 1;
+}
+
+#cyberguard-badge .cg-title {
+  font-size:    9px;
+  font-weight:  700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:        rgba(255, 255, 255, 0.45);
+}
+
+#cyberguard-badge .cg-label {
+  font-size:    13px;
+  font-weight:  700;
+  letter-spacing: 0.02em;
+  line-height:  1.2;
+}
+
+#cyberguard-badge .cg-bar-wrap {
+  position:     absolute;
+  bottom:       0;
+  left:         14px;
+  right:        14px;
+  height:       3px;
+  background:   rgba(255,255,255,0.08);
+  border-radius: 0 0 14px 14px;
+  overflow:     hidden;
+}
+
+#cyberguard-badge .cg-bar-fill {
+  height:       100%;
+  border-radius: 3px;
+  transition:   width 0.6s ease;
+}
