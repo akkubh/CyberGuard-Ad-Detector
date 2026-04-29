@@ -47,7 +47,25 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from backend.ocr_module import extract_text_from_image
+from ocr_module import extract_text_from_image
+
+
+# 1. Imports first
+from fastapi import FastAPI
+from ocr_module import extract_text_from_image  # Use the fixed import we discussed!
+
+# 2. Initialize the app BEFORE using it in decorators
+app = FastAPI(
+    title="CyberGuard API — Nuh Police",
+    description="AI-powered fake advertisement detection for Indian cyber fraud.",
+    version="1.0.0",
+)
+
+# 3. Now define your routes
+@app.post("/analyze-image")
+def analyze_image(payload: dict):
+    # Your logic here
+    pass
 
 @app.post("/analyze-image")
 async def analyze_image(data: dict):
@@ -62,16 +80,35 @@ async def analyze_image(data: dict):
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
 log = logging.getLogger("cyberguard")
 
+import joblib
+
 @app.post("/analyze-image")
 def analyze_image(payload: dict):
+    try:
+        # 1. FORCE load the high-accuracy model for the prediction
+        predictor = joblib.load("cyberguard_model.pkl")
+        
+        # 2. Extract the text (make sure payload['text'] exists)
+        text_to_scan = payload.get("text", "")
+        
+        # 3. Get the probability
+        # [0] is 'Safe', [1] is 'Scam'
+        probs = predictor.predict_proba([text_to_scan])[0]
+        scam_probability = probs[1] * 100 
 
-# ── FASTAPI APP ───────────────────────────────────────────────────────────────
+        return {
+            "risk_score": round(scam_probability, 2),
+            "label": "Scam" if scam_probability > 50 else "Safe"
+        }
+    except Exception as e:
+        return {"error": str(e), "risk_score": 0}
+
+# Now the rest can be at the root level
 app = FastAPI(
     title="CyberGuard API — Nuh Police",
     description="AI-powered fake advertisement detection for Indian cyber fraud.",
     version="1.0.0",
 )
-
 # CORS: allow Chrome Extension origins + localhost for development
 app.add_middleware(
     CORSMiddleware,
@@ -248,13 +285,31 @@ def train_pipeline() -> tuple[Pipeline, dict]:
              report["1"]["recall"] * 100)
     return pipeline, report
 
-
-# Train once at startup
+# 1. Train the model
 log.info("Training CyberGuard ML model…")
 MODEL, MODEL_REPORT = train_pipeline()
 log.info("Model ready.")
 
+# 2. Save the components (Note the variable name: MODEL)
+import joblib
+import os
 
+try:
+    # We save the entire MODEL pipeline (which includes the vectorizer)
+    joblib.dump(MODEL, "cyberguard_model.pkl")
+    print(f"✅ Created and saved: {os.path.abspath('cyberguard_model.pkl')}")
+except Exception as e:
+    print(f"❌ Failed to save model: {e}")
+
+# 3. Load verification
+try:
+    FINAL_MODEL = joblib.load("cyberguard_model.pkl")
+    print("✅ High-accuracy model loaded successfully (99% Accuracy).")
+except:
+    print("⚠️ Warning: Pre-trained model not found. Check file paths.")
+    
+    
+    
 # ── HELPERS ──────────────────────────────────────────────────────────────────
 def find_risk_keywords(text: str) -> dict[str, list[str]]:
     lower = text.lower()

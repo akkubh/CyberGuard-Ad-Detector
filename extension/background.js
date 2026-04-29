@@ -23,8 +23,7 @@
 
 'use strict';
 
-const API_BASE = 'alert-nature-production-153b.up.railway.app';
-
+const API_URL = "http://127.0.0.1:8000/analyze-image";
 // ── BADGE COLOUR HELPER ───────────────────────────────────────────────────────
 function setBadge(tabId, score) {
   let color, text;
