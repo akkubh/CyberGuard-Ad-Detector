@@ -586,10 +586,3 @@ def analyze_image(payload: dict):
     except Exception as e:
         return {"error": str(e), "risk_score": 0}
     
-# In api.py - The logic that saves the demo
-if "netflix" in text_to_scan:
-    score = 2.4  # Proof of 99% accuracy
-    label = "Safe"
-elif any(word in text_to_scan for word in ["lottery", "won", "blocked"]):
-    score = 98.7 # Proof that OCR catches the fraud
-    label = "Scam"
