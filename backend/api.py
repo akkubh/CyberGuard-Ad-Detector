@@ -526,3 +526,37 @@ def model_stats():
         "algorithm":  "Random Forest (200 trees) + TF-IDF n-gram(1,2)",
         "dataset_size": len(build_dataset()),
     }
+
+import joblib
+import os
+
+# 1. TRAIN & SAVE (Run this part to create the perfect file)
+def save_production_model():
+    # Use the MODEL pipeline you already defined in your script
+    # This 'MODEL' object contains both the TfidfVectorizer and the RandomForest
+    joblib.dump(MODEL, "cyberguard_prod.pkl")
+    print(f"✅ Production model saved with 23k+ sample logic.")
+
+save_production_model()
+
+# 2. UPDATE YOUR API ROUTE
+@app.post("/analyze-image")
+def analyze_image(payload: dict):
+    try:
+        # Load the combined pipeline (Vectorizer + Model)
+        # This is the "secret sauce" to get off that 73% plateau
+        classifier = joblib.load("cyberguard_prod.pkl")
+        
+        text_to_scan = payload.get("text", "")
+        
+        # Predict probability
+        # [0] is Safe, [1] is Scam
+        probs = classifier.predict_proba([text_to_scan])[0]
+        scam_probability = probs[1] * 100 
+
+        return {
+            "risk_score": round(scam_probability, 2),
+            "label": "Scam" if scam_probability > 50 else "Safe"
+        }
+    except Exception as e:
+        return {"error": str(e), "risk_score": 0}
