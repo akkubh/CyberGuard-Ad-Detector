@@ -47,7 +47,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from ocr_module import extract_text_from_image
+from backend.ocr_module import extract_text_from_image
 
 @app.post("/analyze-image")
 async def analyze_image(data: dict):
@@ -61,6 +61,9 @@ async def analyze_image(data: dict):
 # ── LOGGING ──────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
 log = logging.getLogger("cyberguard")
+
+@app.post("/analyze-image")
+def analyze_image(payload: dict):
 
 # ── FASTAPI APP ───────────────────────────────────────────────────────────────
 app = FastAPI(

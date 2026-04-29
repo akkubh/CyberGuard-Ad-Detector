@@ -124,9 +124,32 @@ def load_learned_keywords() -> list[str]:
     return [kw["phrase"] for kw in data.get("model_keywords", [])]
 
 
+# WITH this:
 if __name__ == "__main__":
     import sys
     sys.path.append(".")
-    from api import MODEL, build_dataset
-    from pathlib import Path
-    update_keyword_file(MODEL, Path("police_reports.jsonl"))
+    
+    # Build model directly here without importing api.py
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.pipeline import Pipeline
+    from sklearn.model_selection import train_test_split
+    import pandas as pd
+
+    sys.path.insert(0, ".")
+    
+    # Inline minimal dataset + train
+    exec(open("api.py").read().split("@app")[0])  # run only up to first route
+    
+    print("Training model for keyword extraction...")
+    df = build_dataset()
+    X_train, X_test, y_train, y_test = train_test_split(
+        df["text"], df["label"], test_size=0.2, random_state=42, stratify=df["label"]
+    )
+    pipeline = Pipeline([
+        ("tfidf", TfidfVectorizer(ngram_range=(1,2), max_features=5000, sublinear_tf=True)),
+        ("clf",   RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1))
+    ])
+    pipeline.fit(X_train, y_train)
+    
+    update_keyword_file(pipeline, Path("police_reports.jsonl"))
