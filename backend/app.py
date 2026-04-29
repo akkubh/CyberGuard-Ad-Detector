@@ -36,6 +36,7 @@ online advertisements targeting Indian users. Here's the architecture:
 """
 
 # ─── IMPORTS ────────────────────────────────────────────────────────────────
+from sklearn import pipeline
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -53,10 +54,32 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-# ─── SECTION 1: SYNTHETIC DATASET ───────────────────────────────────────────
+# ─── SECTION 1:  DATASET ───────────────────────────────────────────
 # TECHNICAL NOTE: Since real labelled scam data is confidential, we build a
 # representative synthetic dataset. Each sample mirrors real Indian cyber
 # fraud language patterns documented by CERT-In and NCCRP reports.
+
+import pandas as pd
+from sklearn.utils import shuffle
+
+# Load the new datasets from your folder
+df_jobs = pd.read_csv('real-fake-job-postings.csv')[['description', 'fraudulent']]
+df_jobs.columns = ['text', 'label']
+
+df_sms = pd.read_csv('sms-spam-collection.csv', encoding='latin-1')[['v2', 'v1']]
+df_sms.columns = ['text', 'label']
+df_sms['label'] = df_sms['label'].map({'spam': 1, 'ham': 0})
+
+# Load your manual benign data (fixes Netflix/Outskill)
+df_benign = pd.read_csv('benign_data.csv') 
+
+# Combine and shuffle
+df_final = pd.concat([df_jobs, df_sms, df_benign], ignore_index=True).dropna()
+df_final = shuffle(df_final)
+
+# Train and Save
+pipeline.fit(df_final['text'], df_final['label'])
+joblib.dump(pipeline, 'cyberguard_model.pkl')
 
 def build_dataset():
     fake_job_ads = [

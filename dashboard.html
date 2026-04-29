@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberGuard — Nuh Police Dashboard</title>
+<style>
+  :root {
+    --navy: #050d1f; --navy2: #0a1628; --navy3: #0f1f3d;
+    --green: #00ff9d; --red: #ff2d55; --amber: #ffb800; --blue: #00c8ff;
+    --text: #f0f4ff; --muted: rgba(240,244,255,0.5); --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--navy); color: var(--text); font-family: 'Segoe UI', sans-serif; font-size: 13px; }
+
+  /* HEADER */
+  .header { background: var(--navy2); border-bottom: 1px solid var(--border);
+    padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 18px; font-weight: 700; }
+  .header p  { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .live-badge { background: rgba(0,255,157,0.1); border: 1px solid rgba(0,255,157,0.3);
+    color: var(--green); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+
+  /* STATS STRIP */
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; padding: 20px 24px; }
+  .stat-card { background: var(--navy2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; }
+  .stat-card .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .stat-card .value { font-size: 28px; font-weight: 800; margin-top: 4px; }
+
+  /* FILTERS */
+  .filters { padding: 0 24px 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .filters input, .filters select {
+    background: var(--navy2); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 7px 12px; font-size: 12px; outline: none; }
+  .filters input:focus, .filters select:focus { border-color: rgba(0,200,255,0.4); }
+  .btn-refresh { background: linear-gradient(135deg,#00a8d4,#0070a8); border: none;
+    border-radius: 8px; color: white; padding: 7px 16px; font-size: 12px; font-weight: 600;
+    cursor: pointer; }
+
+  /* TABLE */
+  .table-wrap { padding: 0 24px 24px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: var(--navy3); padding: 10px 12px; text-align: left; font-size: 10px;
+    text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .risk-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .r-critical { background: rgba(255,45,85,0.15);  color: var(--red);   border: 1px solid rgba(255,45,85,0.3); }
+  .r-high     { background: rgba(255,107,53,0.15); color: #ff6b35;      border: 1px solid rgba(255,107,53,0.3); }
+  .r-caution  { background: rgba(255,184,0,0.15);  color: var(--amber); border: 1px solid rgba(255,184,0,0.3); }
+  .r-safe     { background: rgba(0,255,157,0.1);   color: var(--green); border: 1px solid rgba(0,255,157,0.25); }
+
+  .url-cell { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--blue); font-size: 11px; }
+  .id-cell  { font-family: monospace; color: var(--muted); font-size: 11px; }
+  .btn-view { background: transparent; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); padding: 3px 9px; font-size: 11px; cursor: pointer; }
+  .btn-view:hover { background: var(--navy3); }
+
+  /* AUTH OVERLAY */
+  .auth-overlay { position: fixed; inset: 0; background: var(--navy);
+    display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .auth-box { background: var(--navy2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 32px; width: 340px; text-align: center; }
+  .auth-box h2 { font-size: 20px; margin-bottom: 6px; }
+  .auth-box p  { color: var(--muted); font-size: 12px; margin-bottom: 20px; }
+  .auth-box input { width: 100%; background: var(--navy); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); padding: 10px 14px; font-size: 13px;
+    outline: none; margin-bottom: 12px; }
+  .auth-box button { width: 100%; background: linear-gradient(135deg,#00a8d4,#0070a8);
+    border: none; border-radius: 8px; color: white; padding: 11px;
+    font-size: 13px; font-weight: 700; cursor: pointer; }
+  .auth-error { color: var(--red); font-size: 11px; margin-top: 8px; display: none; }
+
+  /* MODAL */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50;
+    display: none; align-items: center; justify-content: center; }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--navy2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px; width: 500px; max-height: 80vh; overflow-y: auto; position: relative; }
+  .modal h3 { font-size: 15px; margin-bottom: 14px; }
+  .modal-close { position: absolute; top: 14px; right: 16px; background: none; border: none;
+    color: var(--muted); font-size: 18px; cursor: pointer; }
+  .modal-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .modal-label { font-size: 10px; color: var(--muted); text-transform: uppercase; min-width: 110px; padding-top: 2px; }
+  .modal-value { font-size: 12px; color: var(--text); }
+  .kw-chip { display: inline-block; background: rgba(255,45,85,0.12); border: 1px solid rgba(255,45,85,0.25);
+    color: #ff8099; border-radius: 5px; padding: 2px 7px; margin: 2px; font-size: 10px; }
+</style>
+</head>
+<body>
+
+<!-- AUTH OVERLAY -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <div style="font-size:36px;margin-bottom:12px">🛡️</div>
+    <h2>CyberGuard Dashboard</h2>
+    <p>Nuh Police · Cyber Crime Unit<br>Enter your officer API key to continue</p>
+    <input type="password" id="apiKeyInput" placeholder="Enter API key..." onkeydown="if(event.key==='Enter')login()">
+    <button onclick="login()">Access Dashboard</button>
+    <div class="auth-error" id="authError">Invalid key. Contact your supervisor.</div>
+  </div>
+</div>
+
+<!-- MAIN DASHBOARD -->
+<div id="dashboard" style="display:none">
+  <div class="header">
+    <div>
+      <h1>🛡️ CyberGuard — Nuh Police Cyber Crime Unit</h1>
+      <p>AI Fake Advertisement Detection · Officer Dashboard</p>
+    </div>
+    <span class="live-badge" id="liveBadge">⬤ CONNECTING...</span>
+  </div>
+
+  <div class="stats" id="statsStrip">
+    <div class="stat-card">
+      <div class="label">Total Reports</div>
+      <div class="value" id="statTotal">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">High Risk (≥70%)</div>
+      <div class="value" style="color:var(--red)" id="statHigh">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Filed Today</div>
+      <div class="value" style="color:var(--amber)" id="statToday">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Avg Risk Score</div>
+      <div class="value" style="color:var(--blue)" id="statAvg">—</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="Search URL or reporter..." oninput="filterTable()">
+    <select id="categoryFilter" onchange="filterTable()">
+      <option value="">All Categories</option>
+      <option>Job / Employment Fraud</option>
+      <option>Financial Loan Scam</option>
+      <option>Investment / Ponzi Scheme</option>
+      <option>General / Unknown Fraud</option>
+    </select>
+    <select id="riskFilter" onchange="filterTable()">
+      <option value="0">All Risk Levels</option>
+      <option value="70">High Risk (≥70%)</option>
+      <option value="40">Suspicious (≥40%)</option>
+    </select>
+    <button class="btn-refresh" onclick="loadReports()">↻ Refresh</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Report ID</th>
+          <th>Time</th>
+          <th>Risk</th>
+          <th>Category</th>
+          <th>URL</th>
+          <th>Reporter</th>
+          <th>Flags</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="reportsTbody">
+        <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">Loading reports...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3>📋 Report Detail</h3>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'http://localhost:8000';
+let API_KEY    = '';
+let allReports = [];
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+function login() {
+  API_KEY = document.getElementById('apiKeyInput').value.trim();
+  if (!API_KEY) return;
+  // Test with a real API call
+  fetch(`${API_BASE}/reports?limit=1`, {
+    headers: { 'Authorization': `Bearer ${API_KEY}` }
+  }).then(r => {
+    if (r.ok) {
+      document.getElementById('authOverlay').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      loadReports();
+      setInterval(loadReports, 30000); // auto-refresh every 30s
+    } else {
+      document.getElementById('authError').style.display = 'block';
+    }
+  }).catch(() => {
+    // Backend offline — allow demo mode with fake data
+    API_KEY = '__demo__';
+    document.getElementById('authOverlay').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadDemo();
+  });
+}
+
+// ── LOAD REPORTS ──────────────────────────────────────────────────────────
+function loadReports() {
+  if (API_KEY === '__demo__') { loadDemo(); return; }
+  const minRisk = document.getElementById('riskFilter').value || 0;
+  fetch(`${API_BASE}/reports?limit=100&min_risk=${minRisk}`, {
+    headers: { 'Authorization': `Bearer ${API_KEY}` }
+  })
+  .then(r => r.json())
+  .then(data => {
+    allReports = data.reports || [];
+    renderTable(allReports);
+    document.getElementById('liveBadge').textContent = '⬤ LIVE';
+    document.getElementById('liveBadge').style.color = 'var(--green)';
+    loadStats();
+  })
+  .catch(() => loadDemo());
+}
+
+function loadStats() {
+  fetch(`${API_BASE}/reports/stats`, { headers: { 'Authorization': `Bearer ${API_KEY}` } })
+  .then(r => r.json())
+  .then(s => {
+    document.getElementById('statTotal').textContent = s.total_reports ?? '—';
+    document.getElementById('statHigh').textContent  = s.high_risk ?? '—';
+    document.getElementById('statToday').textContent = s.filed_today ?? '—';
+    document.getElementById('statAvg').textContent   = (s.avg_risk_score ?? 0) + '%';
+  }).catch(() => {});
+}
+
+// ── DEMO DATA ─────────────────────────────────────────────────────────────
+function loadDemo() {
+  allReports = [
+    { id:'CG-A1B2C3D4', received_at:'2024-04-30T09:15:00Z', risk_score:91,
+      fraud_category:'Job / Employment Fraud', url:'http://earn-daily.xyz/jobs',
+      reporter_name:'Constable Ravi Kumar', flagged_keywords:{'Urgency':['urgent','immediately']},
+      comment:'Found in WhatsApp forward', verdict:'FAKE' },
+    { id:'CG-E5F6G7H8', received_at:'2024-04-30T08:42:00Z', risk_score:78,
+      fraud_category:'Financial Loan Scam', url:'http://sbi-instant-loan.tk/apply',
+      reporter_name:'Telegram User 9823451', flagged_keywords:{'No-Check':['no cibil','no documents']},
+      comment:'', verdict:'FAKE' },
+    { id:'CG-I9J0K1L2', received_at:'2024-04-30T07:30:00Z', risk_score:85,
+      fraud_category:'Investment / Ponzi Scheme', url:'http://crypto300percent.work',
+      reporter_name:'Anonymous', flagged_keywords:{'Guarantees':['300% guaranteed','zero risk']},
+      comment:'Multiple victims reported', verdict:'FAKE' },
+  ];
+  document.getElementById('statTotal').textContent = '3';
+  document.getElementById('statHigh').textContent  = '3';
+  document.getElementById('statToday').textContent = '3';
+  document.getElementById('statAvg').textContent   = '85%';
+  document.getElementById('liveBadge').textContent = '⬤ DEMO MODE';
+  document.getElementById('liveBadge').style.color = 'var(--amber)';
+  renderTable(allReports);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function renderTable(reports) {
+  const tbody = document.getElementById('reportsTbody');
+  if (!reports.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">No reports found.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = reports.map((r, i) => {
+    const s = r.risk_score;
+    const cls = s>=80?'r-critical':s>=60?'r-high':s>=35?'r-caution':'r-safe';
+    const time = new Date(r.received_at).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'});
+    const kwCount = Object.values(r.flagged_keywords||{}).reduce((n,a)=>n+a.length,0);
+    const shortUrl = (r.url||'').replace(/https?:\/\//,'').slice(0,30);
+    return `<tr>
+      <td class="id-cell">${r.id}</td>
+      <td style="color:var(--muted)">${time}</td>
+      <td><span class="risk-pill ${cls}">${s}%</span></td>
+      <td>${r.fraud_category||'—'}</td>
+      <td class="url-cell" title="${r.url}">${shortUrl||'—'}</td>
+      <td style="color:var(--muted)">${r.reporter_name||'—'}</td>
+      <td>${kwCount} flags</td>
+      <td><button class="btn-view" onclick="showDetail(${i})">View</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable() {
+  const search   = document.getElementById('searchInput').value.toLowerCase();
+  const category = document.getElementById('categoryFilter').value;
+  const minRisk  = parseInt(document.getElementById('riskFilter').value) || 0;
+  const filtered = allReports.filter(r =>
+    r.risk_score >= minRisk &&
+    (!category || r.fraud_category === category) &&
+    (!search || (r.url||'').toLowerCase().includes(search) ||
+                (r.reporter_name||'').toLowerCase().includes(search))
+  );
+  renderTable(filtered);
+}
+
+function showDetail(idx) {
+  const r = allReports[idx];
+  const kws = r.flagged_keywords || {};
+  const chips = Object.entries(kws).map(([cat, kw]) =>
+    `<div style="margin-bottom:6px"><span style="font-size:10px;color:var(--muted)">${cat}:</span><br>
+     ${kw.map(k=>`<span class="kw-chip">${k}</span>`).join('')}</div>`
+  ).join('');
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-row"><span class="modal-label">Report ID</span><span class="modal-value" style="font-family:monospace">${r.id}</span></div>
+    <div class="modal-row"><span class="modal-label">Filed At</span><span class="modal-value">${new Date(r.received_at).toLocaleString('en-IN')}</span></div>
+    <div class="modal-row"><span class="modal-label">Risk Score</span><span class="modal-value" style="font-weight:700;color:${r.risk_score>=70?'var(--red)':'var(--amber)'}">${r.risk_score}%</span></div>
+    <div class="modal-row"><span class="modal-label">Verdict</span><span class="modal-value">${r.verdict}</span></div>
+    <div class="modal-row"><span class="modal-label">Category</span><span class="modal-value">${r.fraud_category}</span></div>
+    <div class="modal-row"><span class="modal-label">URL</span><span class="modal-value" style="color:var(--blue);word-break:break-all">${r.url||'—'}</span></div>
+    <div class="modal-row"><span class="modal-label">Reporter</span><span class="modal-value">${r.reporter_name||'—'}</span></div>
+    <div class="modal-row"><span class="modal-label">Comment</span><span class="modal-value">${r.comment||'—'}</span></div>
+    <div class="modal-row"><span class="modal-label">Red Flags</span><div>${chips||'None'}</div></div>
+  `;
+  document.getElementById('modalBg').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
+document.getElementById('modalBg').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+</script>
+</body>
+</html>

@@ -41,11 +41,22 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from sklearn import pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from ocr_module import extract_text_from_image
+
+@app.post("/analyze-image")
+async def analyze_image(data: dict):
+    # This uses your new ocr_module.py
+    text = extract_text_from_image(data['image_base64'])
+    prediction = pipeline.predict([text])[0]
+    score = pipeline.predict_proba([text])[0][1]
+    return {"text": text, "risk_score": float(score * 100)}
+
 
 # ── LOGGING ──────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")

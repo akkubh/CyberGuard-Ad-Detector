@@ -23,7 +23,7 @@
 
 'use strict';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'alert-nature-production-153b.up.railway.app';
 
 // ── BADGE COLOUR HELPER ───────────────────────────────────────────────────────
 function setBadge(tabId, score) {
